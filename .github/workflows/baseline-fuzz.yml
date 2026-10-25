@@ -63,7 +63,8 @@ jobs:
             "$RUNNER_TEMP/libclang_rt.ubsan_standalone-x86_64.a"
           ln -sfn "$rt/libclang_rt.ubsan_standalone_cxx-x86_64.a" \
             "$RUNNER_TEMP/libclang_rt.ubsan_standalone_cxx-x86_64.a"
-          export CFLAGS="-march=x86-64 -mtune=generic -g0 -ffile-prefix-map=$GITHUB_WORKSPACE=/src/atheris -ffile-prefix-map=/opt/atheris-build=/build-env"
+          pyroot="$(dirname "$(dirname "$(readlink -f /opt/atheris-build/bin/python)")")"
+          export CFLAGS="-march=x86-64 -mtune=generic -g0 -ffile-prefix-map=$GITHUB_WORKSPACE=/src/atheris -ffile-prefix-map=/opt/atheris-build=/build-env -ffile-prefix-map=${pyroot}=/python"
           export CXXFLAGS="$CFLAGS"
           export LDFLAGS="-march=x86-64 -mtune=generic"
           uv build --python /opt/atheris-build/bin/python --no-build-isolation --wheel
