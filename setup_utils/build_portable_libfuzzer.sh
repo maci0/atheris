@@ -33,6 +33,18 @@ cxx="${CXX:-clang++}"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
+# Upstream marks the compare path target("popcnt") and calls that body
+# directly. There is no second version for CPUs without POPCNT, so the
+# attribute would raise the wheel above the x86-64 baseline. Drop it.
+# Popcountll then lowers to integer shifts at -march=x86-64.
+cp -a "$fuzzer_dir" "$work/fuzzer"
+sed -i 's/__attribute__((target("popcnt")))//' "$work/fuzzer/FuzzerPlatform.h"
+if grep -q 'target("popcnt")' "$work/fuzzer/FuzzerPlatform.h"; then
+  echo "failed to remove the popcnt target attribute" >&2
+  exit 1
+fi
+fuzzer_dir="$work/fuzzer"
+
 # Baseline only. -march=x86-64 is SSE2. -mtune=generic must not raise it.
 flags=(
   -march=x86-64

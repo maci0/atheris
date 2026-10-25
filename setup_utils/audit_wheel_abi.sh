@@ -48,8 +48,9 @@ audit_one() {
   cxxabi="$(highest "$(printf '%s\n' "$dyn" | sed -n 's/.*CXXABI_\([0-9.]*\).*/\1/p')")"
   ymm="$(printf '%s\n' "$text" | grep -c -E '%ymm|vinserti|vinsertf|vpbroadcast|vpadd' || true)"
   zmm="$(printf '%s\n' "$text" | grep -c -E '%zmm|vpternlog' || true)"
-  echo "glibc=${glibc:-none} glibcxx=${glibcxx:-none} cxxabi=${cxxabi:-none} ymm=${ymm} zmm=${zmm}"
-  if [ "$ymm" != "0" ] || [ "$zmm" != "0" ]; then
+  popcnt="$(printf '%s\n' "$text" | grep -c popcnt || true)"
+  echo "glibc=${glibc:-none} glibcxx=${glibcxx:-none} cxxabi=${cxxabi:-none} ymm=${ymm} zmm=${zmm} popcnt=${popcnt}"
+  if [ "$ymm" != "0" ] || [ "$zmm" != "0" ] || [ "$popcnt" != "0" ]; then
     echo "CPU floor is above x86-64 baseline" >&2
     fail=1
   fi

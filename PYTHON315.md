@@ -22,7 +22,9 @@ Clang supplies the compiler. The libFuzzer archive is not the one installed
 beside that Clang. `setup_utils/build_portable_libfuzzer.sh` compiles the
 pinned compiler-rt `lib/fuzzer` sources (LLVM 23.1.3, without `FuzzerMain.cpp`)
 with `-march=x86-64 -mtune=generic` and the script is what `LIBFUZZER_LIB`
-must point at. The same architecture flags are passed for the native
+must point at. The build drops libFuzzer's `target("popcnt")` compare
+specialization, which upstream calls directly, so the objects stay on the
+SSE2 baseline instead of requiring POPCNT. The same architecture flags are passed for the native
 extensions, the libFuzzer upgrade wrapper, and the merged sanitizer objects.
 pybind11 3.1.0 builds against the actual CPython 3.15 headers. No stable-ABI
 compatibility override is used. Set SOURCE_DATE_EPOCH to the source commit
