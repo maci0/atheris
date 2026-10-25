@@ -25,6 +25,7 @@ Currently supported python versions are:
     - 3.12
     - 3.13
     - 3.14
+    - 3.15
 """
 
 import sys
@@ -35,11 +36,11 @@ from typing import List
 
 PYTHON_VERSION = sys.version_info[:2]
 
-if PYTHON_VERSION < (3, 11) or PYTHON_VERSION > (3, 14):
+if PYTHON_VERSION < (3, 11) or PYTHON_VERSION > (3, 15):
   raise RuntimeError(
       "You are fuzzing on an unsupported python version: "
-      + f"{PYTHON_VERSION[0]}.{PYTHON_VERSION[1]}. Only 3.11 - 3.14 are "
-      + "supported by atheris 3.0. Use atheris 2.0 for older python versions."
+      + f"{PYTHON_VERSION[0]}.{PYTHON_VERSION[1]}. Only 3.11 - 3.15 are "
+      + "supported by atheris 3.1. Use atheris 2.0 for older python versions."
   )
 
 ### Instruction categories ###

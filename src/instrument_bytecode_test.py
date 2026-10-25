@@ -26,6 +26,26 @@ class InstrumentBytecodeTest(mockutils.MockLibFuzzerMixin, unittest.TestCase):
     atheris._trace_cmp = self.original_trace_cmp
     super(InstrumentBytecodeTest, self).tearDown()
 
+  @unittest.skipUnless(sys.version_info[:2] >= (3, 15), "3.15 inline caches")
+  def test_python315_cached_entry_iteration_and_star_call(self):
+    def add(a, b):
+      return a + b
+
+    def cached_ops(values):
+      total = 0
+      for pair in values:
+        total += add(*pair)
+      return total
+
+    opnames = {instruction.opname for instruction in dis.get_instructions(cached_ops)}
+    self.assertTrue({"RESUME", "GET_ITER", "CALL_FUNCTION_EX"} <= opnames)
+    atheris.instrument_func(cached_ops)
+    mockutils.UpdateCounterArrays()
+    for _ in range(1000):
+      self.assertEqual(cached_ops([(1, 2), (3, 4)]), 10)
+      self.assertEqual(cached_ops([]), 0)
+    self.assertTrue(any(mockutils.mock_libfuzzer.get_8bit_counters()))
+
   def test_instrument_simple_function_no_dataflow(self):
     def simple_function(a, b):
       if a > b:
