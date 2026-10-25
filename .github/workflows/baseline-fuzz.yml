@@ -1,0 +1,88 @@
+name: Baseline fuzz
+
+on:
+  push:
+    branches: [fix/portable-x86-64-libfuzzer]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the compiler
+        run: sudo apt-get update && sudo apt-get install -y clang g++ make
+
+      - name: Install uv 0.13.5
+        env:
+          UV_VERSION: "0.13.5"
+        run: |
+          set -euo pipefail
+          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Fetch pinned compiler-rt fuzzer sources
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --sparse https://github.com/llvm/llvm-project.git "$RUNNER_TEMP/llvm"
+          git -C "$RUNNER_TEMP/llvm" sparse-checkout set compiler-rt/lib/fuzzer compiler-rt/include
+          git -C "$RUNNER_TEMP/llvm" fetch --depth 1 origin 0d261d1ca552c95a8f007e061c787ac7132fbcbc
+          git -C "$RUNNER_TEMP/llvm" checkout 0d261d1ca552c95a8f007e061c787ac7132fbcbc
+
+      - name: Build baseline libFuzzer and the wheel
+        env:
+          SOURCE_DATE_EPOCH: "1792902047"
+          TZ: UTC
+          LC_ALL: C
+          PYTHONHASHSEED: "0"
+          CC: clang
+          CXX: clang++
+        run: |
+          set -euo pipefail
+          uv python install 3.15.1
+          uv venv /opt/atheris-build --python 3.15.1
+          uv pip install --python /opt/atheris-build/bin/python \
+            "setuptools==84.2.1" "wheel==0.48.0" "pybind11==3.1.0"
+          export LIBFUZZER_LIB="$RUNNER_TEMP/libclang_rt.fuzzer_no_main-x86_64.a"
+          CXX=clang++ ./setup_utils/build_portable_libfuzzer.sh \
+            "$RUNNER_TEMP/llvm" "$LIBFUZZER_LIB"
+          export CFLAGS="-march=x86-64 -mtune=generic -g0 -ffile-prefix-map=$GITHUB_WORKSPACE=/src/atheris -ffile-prefix-map=/opt/atheris-build=/build-env"
+          export CXXFLAGS="$CFLAGS"
+          export LDFLAGS="-march=x86-64 -mtune=generic"
+          uv build --python /opt/atheris-build/bin/python --no-build-isolation --wheel
+          ./setup_utils/audit_wheel_abi.sh --self-check
+          ./setup_utils/audit_wheel_abi.sh dist/*.whl
+          sha256sum dist/*.whl
+
+      - name: Fuzz Resembl on this runner
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/maci0/resembl.git "$RUNNER_TEMP/resembl"
+          git -C "$RUNNER_TEMP/resembl" fetch --depth 1 origin 4ea4e13ea1e126b7e83b3f8c8ced5fc6dec2cb9e
+          git -C "$RUNNER_TEMP/resembl" checkout 4ea4e13ea1e126b7e83b3f8c8ced5fc6dec2cb9e
+          cd "$RUNNER_TEMP/resembl"
+          UV_PROJECT_ENVIRONMENT="$RUNNER_TEMP/venv" uv sync --python 3.15.1 --locked --extra fuzz
+          wheel="$(echo "$GITHUB_WORKSPACE"/dist/*.whl)"
+          named="$RUNNER_TEMP/$(basename "$wheel")"
+          cp "$wheel" "$named"
+          uv pip install --python "$RUNNER_TEMP/venv/bin/python" --reinstall --no-deps "$named"
+          fail=0
+          for f in fuzzers/fuzz_*.py; do
+            echo "==== $f ===="
+            set +e
+            "$RUNNER_TEMP/venv/bin/python" "$f" -max_total_time=1
+            status=$?
+            set -e
+            echo "status=$status"
+            if [ "$status" -ne 0 ]; then
+              fail=1
+            fi
+          done
+          exit "$fail"

@@ -32,10 +32,14 @@ timestamp, TZ=UTC, LC_ALL=C, PYTHONHASHSEED=0 and use -g0 plus
 -ffile-prefix-map for source and build-environment paths when independently
 comparing wheels from different paths.
 
-`setup_utils/audit_wheel_abi.sh` records, for every ELF in the wheel, the
-highest GLIBC and GLIBCXX symbol versions and whether the text contains AVX
-or AVX-512. A baseline wheel has neither. The measured floors belong in the
-release provenance; a previous wheel's floor is not a promise for this one.
+`setup_utils/audit_wheel_abi.sh` records the highest GLIBC and GLIBCXX
+symbol versions of the extension modules, the bundled libFuzzer archive,
+and the merged sanitizer objects, and whether their text contains AVX,
+AVX-512, or POPCNT. A baseline wheel has none of those. The script fails
+if objdump, readelf, or ar is missing, if a wheel lacks that set, or if it
+is pointed at an empty directory. `--self-check` covers the empty input.
+The measured floors belong in the release provenance; a previous wheel's
+floor is not a promise for this one.
 
 Run the upstream version_dependent, instrument_bytecode, fuzzed_data_provider,
 instrument_all, regex, string-hook, fuzz integration and custom mutation tests.
