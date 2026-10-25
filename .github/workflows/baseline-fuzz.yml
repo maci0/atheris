@@ -38,7 +38,6 @@ jobs:
 
       - name: Build baseline libFuzzer and the wheel
         env:
-          SOURCE_DATE_EPOCH: "1792902047"
           TZ: UTC
           LC_ALL: C
           PYTHONHASHSEED: "0"
@@ -46,6 +45,7 @@ jobs:
           CXX: clang++
         run: |
           set -euo pipefail
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
           uv python install 3.15.1
           uv venv /opt/atheris-build --python 3.15.1
           uv pip install --python /opt/atheris-build/bin/python \
