@@ -483,5 +483,6 @@ setup(
     ext_modules=ext_modules,
     setup_requires=["pybind11>=2.5.0"],
     cmdclass={"build_ext": BuildExt},
+    license_files=["LICENSE", "compiler-rt/LICENSE.TXT", "NOTICE"],
     zip_safe=False,
 )
