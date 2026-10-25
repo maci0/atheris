@@ -10,6 +10,11 @@
 
 set -euo pipefail
 
+if [ "$(uname -m)" != "x86_64" ]; then
+  echo "the baseline libFuzzer archive is Linux x86_64 only (got $(uname -m))" >&2
+  exit 1
+fi
+
 if [ "$#" -ne 2 ]; then
   echo "usage: $0 <llvm-project-root> <output.a>" >&2
   exit 2

@@ -35,7 +35,11 @@ fi
 (
   DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
   cd "$DIR"
-  "$CXX" -march=x86-64 -mtune=generic -fPIC -g0 -c fuzzer_run_driver_wrapper.cc -o "$tmp_wrapper"
+  arch_flags=()
+  if [ "$(uname -m)" = "x86_64" ]; then
+    arch_flags=(-march=x86-64 -mtune=generic)
+  fi
+  "$CXX" "${arch_flags[@]}" -fPIC -g0 -c fuzzer_run_driver_wrapper.cc -o "$tmp_wrapper"
 )
 ar r "$tmp_libfuzzer" "$tmp_wrapper"
 

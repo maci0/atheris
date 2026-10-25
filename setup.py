@@ -15,6 +15,7 @@
 """Setuptools for Atheris."""
 
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -380,9 +381,10 @@ class BuildExt(build_ext):
     ]
     l_opts = []
 
-    # The extension must not inherit the build machine's -march. The x86-64
-    # baseline is SSE2; -mtune=generic does not add instructions.
-    if sys.platform == "linux":
+    # Linux x86_64 must not inherit the build machine's -march. The baseline
+    # is SSE2. Other machines keep the compiler's own target: -march=x86-64
+    # is not a flag for them. The published wheel is Linux x86_64 only.
+    if sys.platform == "linux" and platform.machine() == "x86_64":
       portable_arch = ["-march=x86-64", "-mtune=generic"]
       c_opts += portable_arch
       l_opts += portable_arch

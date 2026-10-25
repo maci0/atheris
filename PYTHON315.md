@@ -21,8 +21,9 @@ linked glibc and libstdc++ symbol versions become the wheel's floor.
 Clang supplies the compiler. The libFuzzer archive is not the one installed
 beside that Clang. `setup_utils/build_portable_libfuzzer.sh` compiles the
 pinned compiler-rt `lib/fuzzer` sources (LLVM 23.1.3, without `FuzzerMain.cpp`)
-with `-march=x86-64 -mtune=generic` and the script is what `LIBFUZZER_LIB`
-must point at. The build drops libFuzzer's `target("popcnt")` compare
+with `-march=x86-64 -mtune=generic` on x86_64, and the script is what
+`LIBFUZZER_LIB` must point at. The script refuses any other machine. A
+source build on another architecture does not receive those flags. The build drops libFuzzer's `target("popcnt")` compare
 specialization, which upstream calls directly, so the objects stay on the
 SSE2 baseline instead of requiring POPCNT. The same architecture flags are passed for the native
 extensions, the libFuzzer upgrade wrapper, and the merged sanitizer objects.

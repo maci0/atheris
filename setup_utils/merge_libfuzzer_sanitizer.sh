@@ -35,7 +35,11 @@ cp "$sanitizer" "$tmp_sanitizer"
 
 ar d "$tmp_sanitizer" $strip_preinit  # Intentionally not quoted
 
-"$CXX" -march=x86-64 -mtune=generic -Wl,--whole-archive "$libfuzzer" "$tmp_sanitizer" -Wl,--no-whole-archive -lpthread -ldl -shared -o "$tmp_merged"
+arch_flags=()
+if [ "$(uname -m)" = "x86_64" ]; then
+  arch_flags=(-march=x86-64 -mtune=generic)
+fi
+"$CXX" "${arch_flags[@]}" -Wl,--whole-archive "$libfuzzer" "$tmp_sanitizer" -Wl,--no-whole-archive -lpthread -ldl -shared -o "$tmp_merged"
 
 echo "$tmp_merged"
 exit 0
