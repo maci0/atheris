@@ -53,6 +53,16 @@ jobs:
           export LIBFUZZER_LIB="$RUNNER_TEMP/libclang_rt.fuzzer_no_main-x86_64.a"
           CXX=clang++ ./setup_utils/build_portable_libfuzzer.sh \
             "$RUNNER_TEMP/llvm" "$LIBFUZZER_LIB"
+          rt="$(clang -print-resource-dir)/lib/linux"
+          for name in asan ubsan_standalone ubsan_standalone_cxx; do
+            ./setup_utils/audit_wheel_abi.sh "$rt/libclang_rt.${name}-x86_64.a"
+          done
+          ln -sfn "$rt/libclang_rt.asan-x86_64.a" \
+            "$RUNNER_TEMP/libclang_rt.asan-x86_64.a"
+          ln -sfn "$rt/libclang_rt.ubsan_standalone-x86_64.a" \
+            "$RUNNER_TEMP/libclang_rt.ubsan_standalone-x86_64.a"
+          ln -sfn "$rt/libclang_rt.ubsan_standalone_cxx-x86_64.a" \
+            "$RUNNER_TEMP/libclang_rt.ubsan_standalone_cxx-x86_64.a"
           export CFLAGS="-march=x86-64 -mtune=generic -g0 -ffile-prefix-map=$GITHUB_WORKSPACE=/src/atheris -ffile-prefix-map=/opt/atheris-build=/build-env"
           export CXXFLAGS="$CFLAGS"
           export LDFLAGS="-march=x86-64 -mtune=generic"
