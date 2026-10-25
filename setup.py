@@ -27,7 +27,7 @@ from setuptools.command.build_ext import build_ext
 
 __version__ = os.getenv("ATHERIS_VERSION")
 if not __version__:
-    __version__ = "3.1.0+relumea.1"
+    __version__ = "3.1.0+relumea.2"
 
 
 if len(sys.argv) > 1 and sys.argv[1] == "print_version":
@@ -380,6 +380,13 @@ class BuildExt(build_ext):
     ]
     l_opts = []
 
+    # The extension must not inherit the build machine's -march. The x86-64
+    # baseline is SSE2; -mtune=generic does not add instructions.
+    if sys.platform == "linux":
+      portable_arch = ["-march=x86-64", "-mtune=generic"]
+      c_opts += portable_arch
+      l_opts += portable_arch
+
     if sys.platform == "darwin":
       darwin_opts = ["-stdlib=libc++", "-mmacosx-version-min=10.7"]
       c_opts += darwin_opts
@@ -393,13 +400,15 @@ class BuildExt(build_ext):
       ext.define_macros = [("VERSION_INFO",
                             "'{}'".format(self.distribution.get_version())),
                            ("ATHERIS_MODULE_NAME", ext.name.split(".")[1])]
-      ext.extra_compile_args = c_opts
+      # Copy the flag lists. Appending to the shared list would put
+      # -DMOCK_LIBFUZZER on every extension compiled after the mock module.
+      ext.extra_compile_args = list(c_opts)
       if ext.name == "atheris.core_with_libfuzzer":
         ext.extra_link_args = l_opts + [libfuzzer]
       else:
-        ext.extra_link_args = l_opts
+        ext.extra_link_args = list(l_opts)
       if ext.name == "atheris.mock_libfuzzer.mock_libfuzzer":
-        ext.extra_compile_args += ["-DMOCK_LIBFUZZER"]
+        ext.extra_compile_args.append("-DMOCK_LIBFUZZER")
     build_ext.build_extensions(self)
 
     try:
